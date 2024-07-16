@@ -1,11 +1,12 @@
 from mp_api.client import MPRester
 from itertools import combinations
+import csv
 
 def get_binary_compounds(api_key, metallic_elements):
     compounds_info = []
     with MPRester(api_key) as mpr:
         # Generate all possible pairs of metallic elements
-        element_pairs = list(combinations(metallic_elements, 2)) #  
+        element_pairs = list(combinations(metallic_elements, 2))
         
         for pair in element_pairs:
             # Query for binary compounds for each pair
@@ -13,7 +14,10 @@ def get_binary_compounds(api_key, metallic_elements):
                 elements=list(pair),
                 num_elements=(2,2),
                 energy_above_hull=(0, 0.1),  # Ensuring stability
-                fields=["material_id", 'formula_pretty', 'elements', 'energy_above_hull', 'symmetry', 'band_gap']
+                fields=[
+                    "material_id", 'formula_pretty', 'elements', 'energy_above_hull', 
+                    'symmetry', 'band_gap', 'theoretical'
+                ]
             )
             
             # Extract relevant information from the binary compounds
@@ -22,13 +26,25 @@ def get_binary_compounds(api_key, metallic_elements):
                     compounds_info.append({
                         "material_id": doc.material_id,
                         "formula": doc.formula_pretty,
-                        "elements": [elem.symbol for elem in doc.elements],
+                        "elements": ", ".join(elem.symbol for elem in doc.elements),
                         "energy_above_hull": doc.energy_above_hull,
                         "crystal_system": doc.symmetry.crystal_system,
-                        "band_gap": doc.band_gap
+                        "band_gap": doc.band_gap,
+                        "theoretical": doc.theoretical
                     })
     
     return compounds_info
+
+def save_to_csv(compounds, filename):
+    if not compounds:
+        print("No compounds to save.")
+        return
+
+    keys = compounds[0].keys()
+    with open(filename, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(compounds)
 
 api_key = 'w1FbQcBbkQZJHyhMJGxssIEttJ8JSGu8'
 metallic_elements = [
@@ -42,12 +58,9 @@ metallic_elements = [
 # Get binary compounds
 binary_compounds = get_binary_compounds(api_key, metallic_elements)
 
-# Print the list of binary compounds
-for compound in binary_compounds:
-    print(f"Material ID: {compound['material_id']}")
-    print(f"Formula: {compound['formula']}")
-    print(f"Elements: {', '.join(compound['elements'])}")
-    print(f"Energy above hull: {compound['energy_above_hull']} eV/atom")
-    print(f"Crystal system: {compound['crystal_system']}")
-    print(f"Band gap: {compound['band_gap']} eV")
-    print("---")
+# Save compounds to CSV
+save_to_csv(binary_compounds, 'binary_compounds.csv')
+
+# Print summary
+print(f"Total binary compounds found: {len(binary_compounds)}")
+print("Results have been saved to 'binary_compounds.csv'")
