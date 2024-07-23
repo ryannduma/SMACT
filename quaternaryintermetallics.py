@@ -28,10 +28,10 @@ def get_all_compounds(api_key, limit=10000):
         })
     return compounds_info
 
-def filter_binary_metallic_compounds(compounds, metallic_elements):
+def filter_quaternary_metallic_compounds(compounds, metallic_elements):
     return [
         compound for compound in compounds
-        if compound['num_elements'] == 2
+        if compound['num_elements'] == 4
         and all(element in metallic_elements for element in compound['elements'].split(', '))
         and isinstance(compound['energy_above_hull'], (int, float)) and compound['energy_above_hull'] <= 0.1
     ]
@@ -61,13 +61,13 @@ print("Retrieving all compounds...")
 all_compounds = get_all_compounds(api_key)
 print(f"Total compounds retrieved: {len(all_compounds)}")
 
-# Filter binary metallic compounds
-print("Filtering binary metallic compounds...")
-binary_compounds = filter_binary_metallic_compounds(all_compounds, metallic_elements)
+# Filter quaternary metallic compounds
+print("Filtering quaternary metallic compounds...")
+quaternary_compounds = filter_quaternary_metallic_compounds(all_compounds, metallic_elements)
 
 # Save compounds to CSV
-save_to_csv(binary_compounds, 'binary_compounds.csv')
+save_to_csv(quaternary_compounds, 'quaternary_compounds.csv')
 
 # Print summary
-print(f"Total binary metallic compounds found: {len(binary_compounds)}")
-print("Results have been saved to 'binary_compounds.csv'")
+print(f"Total quaternary metallic compounds found: {len(quaternary_compounds)}")
+print("Results have been saved to 'quaternary_compounds.csv'")
