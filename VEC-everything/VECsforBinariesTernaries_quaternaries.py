@@ -55,12 +55,14 @@ def process_compounds(input_file, valence_file, output_file):
     with open(input_file, 'r') as file:
         reader = csv.DictReader(file)
         output_data = []
-        vec_counts = []
+        vec_counts_metal = []
+        vec_counts_nonmetal = []
 
         for row in reader:
             formula = row['formula']
             elements = row['elements'].split(', ')
             theoretical = row['theoretical']
+            is_metal = row['is_metal'].lower() == 'true'
 
             # Extract element stoichiometry using the improved parser
             element_stoich = parse_formula(formula)
@@ -73,7 +75,10 @@ def process_compounds(input_file, valence_file, output_file):
                     valence_info.append(f"{element}: {stoich} (Valence: {valence})")
 
             vec_count = calculate_vec(element_stoich, valence_data)
-            vec_counts.append(vec_count)
+            if is_metal:
+                vec_counts_metal.append(vec_count)
+            else:
+                vec_counts_nonmetal.append(vec_count)
 
             # Create output row
             output_row = {
@@ -82,25 +87,28 @@ def process_compounds(input_file, valence_file, output_file):
                 'elements': row['elements'],
                 'theoretical': theoretical,
                 'valence_info': ', '.join(valence_info),
-                'VEC_count': vec_count
+                'VEC_count': vec_count,
+                'is_metal': is_metal
             }
             output_data.append(output_row)
 
     # Write output data to CSV
     with open(output_file, 'w', newline='') as file:
-        fieldnames = ['material_id', 'formula', 'elements', 'theoretical', 'valence_info', 'VEC_count']
+        fieldnames = ['material_id', 'formula', 'elements', 'theoretical', 'valence_info', 'VEC_count', 'is_metal']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(output_data)
 
-    return vec_counts
+    return vec_counts_metal, vec_counts_nonmetal
 
-def plot_histogram(vec_counts, title, filename):
+def plot_histogram(vec_counts_metal, vec_counts_nonmetal, title, filename):
     plt.figure(figsize=(10, 6))
-    plt.hist(vec_counts, bins=30, edgecolor='black')
+    plt.hist(vec_counts_metal, bins=30, alpha=0.5, color='blue', label='Metals')
+    plt.hist(vec_counts_nonmetal, bins=30, alpha=0.5, color='red', label='Non-metals')
     plt.xlabel('VEC Count')
     plt.ylabel('Frequency')
     plt.title(title)
+    plt.legend()
     plt.grid(True)
     plt.savefig(filename)
     plt.close()
@@ -113,9 +121,9 @@ for compound_type in compound_types:
     input_file = f'{compound_type}_compounds.csv'
     output_file = f'VECcount_plusgram_{compound_type}.csv'
     
-    vec_counts = process_compounds(input_file, valence_file, output_file)
+    vec_counts_metal, vec_counts_nonmetal = process_compounds(input_file, valence_file, output_file)
     
-    plot_histogram(vec_counts, f'Histogram of VEC Counts for {compound_type.capitalize()} Compounds', f'vec_histogram_{compound_type}.png')
+    plot_histogram(vec_counts_metal, vec_counts_nonmetal, f'Histogram of VEC Counts for {compound_type.capitalize()} Compounds', f'vec_histogram_{compound_type}.png')
     
     # Validate output line by line
     if validate_output(output_file):

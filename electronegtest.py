@@ -40,27 +40,35 @@ def calculate_electronegativity_difference(formula, electronegativity):
     
     return sqrt(diff_sum)
 
+def process_compound_file(input_file, output_file, electronegativity):
+    """Process a compound file and write the results with electronegativity differences."""
+    with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
+        reader = csv.DictReader(infile)
+        fieldnames = reader.fieldnames + ['electronegativity_difference', 'atomic_concentrations']
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in reader:
+            try:
+                concentrations = calculate_atomic_concentrations(row['formula'])
+                en_diff = calculate_electronegativity_difference(row['formula'], electronegativity)
+                row['electronegativity_difference'] = en_diff
+                row['atomic_concentrations'] = '; '.join(f"{elem}: {conc:.4f}" for elem, conc in concentrations.items())
+                writer.writerow(row)
+            except KeyError as e:
+                print(f"Warning: Could not calculate for {row['formula']}. Missing electronegativity value for {e}")
+
+    print(f"Processing complete. Results written to {output_file}")
+
 # Load electronegativity data
 electronegativity = load_electronegativity_data('magpiery.csv')
 
-# Process the binary intermetallics CSV file
-input_file = 'binary_compounds.csv'  # Replace with your actual file name
-output_file = 'binary_intermetallics_with_electronegativity.csv'
+# Process Binary, Ternary, and Quaternary compound files
+compound_types = ['binary', 'ternary', 'quaternary']
 
-with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
-    reader = csv.DictReader(infile)
-    fieldnames = reader.fieldnames + ['electronegativity_difference', 'atomic_concentrations']
-    writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-    writer.writeheader()
+for compound_type in compound_types:
+    input_file = f'{compound_type}_compounds.csv'
+    output_file = f'{compound_type}_compounds_with_electronegativity.csv'
+    process_compound_file(input_file, output_file, electronegativity)
 
-    for row in reader:
-        try:
-            concentrations = calculate_atomic_concentrations(row['formula'])
-            en_diff = calculate_electronegativity_difference(row['formula'], electronegativity)
-            row['electronegativity_difference'] = en_diff
-            row['atomic_concentrations'] = '; '.join(f"{elem}: {conc:.4f}" for elem, conc in concentrations.items())
-            writer.writerow(row)
-        except KeyError as e:
-            print(f"Warning: Could not calculate for {row['formula']}. Missing electronegativity value for {e}")
-
-print(f"Processing complete. Results written to {output_file}")
+print("All compound types have been processed.")

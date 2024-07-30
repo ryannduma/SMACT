@@ -2,18 +2,25 @@ import csv
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import numpy as np
 
 def load_data(vec_file, compound_file):
     vec_data = pd.read_csv(vec_file)
     compound_data = pd.read_csv(compound_file)
     
+    # Filter for metallic compounds
+    vec_data = vec_data[vec_data['is_metal'].astype(str).str.lower() == 'true']
+    
+    # Clean and convert VEC_count to numeric
+    vec_data['VEC_count'] = pd.to_numeric(vec_data['VEC_count'], errors='coerce')
+    
     # Merge the data based on material_id
     merged_data = pd.merge(vec_data, compound_data, on='material_id')
     
-    # Filter for metallic compounds
-    metallic_data = merged_data[merged_data['is_metal'] == True]
+    # Remove any rows with NaN values in VEC_count
+    merged_data = merged_data.dropna(subset=['VEC_count'])
     
-    return metallic_data
+    return merged_data
 
 def plot_vec_vs_crystal_system(data, compound_type):
     plt.figure(figsize=(12, 6))
@@ -23,7 +30,7 @@ def plot_vec_vs_crystal_system(data, compound_type):
     plt.ylabel('VEC')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig(f'vec_vs_crystal_system_{compound_type}.png')
+    plt.savefig(f'vec_vs_crystal_system2_{compound_type}.png')
     plt.close()
 
 def plot_vec_vs_spacegroup(data, compound_type):
