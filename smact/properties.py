@@ -1,7 +1,7 @@
-from typing import List, Optional, Union
+import csv
 import re
 from collections import defaultdict
-import csv
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -211,4 +211,3 @@ def valence_electron_count(compound: str) -> float:
 
     vec = total_valence / total_stoich
     return vec
-
