@@ -437,6 +437,8 @@ def smact_validity(
     use_pauling_test: bool = True,
     include_alloys: bool = True,
     oxidation_states_set: str = "icsd24",
+    allow_mixed_valence: bool = False,
+    max_combinations: int = 5000,
 ) -> bool:
     """
     Check if a composition is valid according to the SMACT rules.
@@ -457,6 +459,8 @@ def smact_validity(
             'pymatgen_sp' and 'wiki' for the 2014 SMACT default, 2016 ICSD, 2024 ICSD, pymatgen structure predictor and Wikipedia
             (https://en.wikipedia.org/wiki/Template:List_of_oxidation_states_of_the_elements) oxidation states respectively.
             A filepath to an oxidation states text file can also be supplied.
+        allow_mixed_valence (bool): If True, allow elements to adopt different oxidation states at different sites.
+        max_combinations (int): Maximum number of oxidation state combinations to try when allow_mixed_valence is True.
 
     Returns:
     -------
@@ -500,12 +504,21 @@ def smact_validity(
             stacklevel=2,
         )
         ox_combos = [e.oxidation_states_wiki for e in smact_elems]
-
     else:
         raise (
             Exception(
                 f'{oxidation_states_set} is not valid. Enter either "smact14", "icsd16", "icsd24", "pymatgen_sp","wiki" or a filepath to a textfile of oxidation states.'
             )
+        )
+
+    if allow_mixed_valence:
+        from smact.mixed_valence import is_mixed_valence_valid
+
+        return is_mixed_valence_valid(
+            composition,
+            use_pauling_test=use_pauling_test,
+            oxidation_states_set=oxidation_states_set,
+            max_combinations=max_combinations,
         )
 
     threshold = np.max(count)
